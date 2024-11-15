@@ -1,0 +1,6 @@
+Dockerfile*
+docker-compose.yaml
+Makefile
+service
+.env
+.env.dist

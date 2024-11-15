@@ -1,0 +1,23 @@
+POST http://localhost:8080/users
+content-type: application/json
+
+{
+    "name": "porucznik",
+    "other": "system admin"
+}
+###
+GET http://localhost:8080/users?limit=10&offset=0
+content-type: application/json
+
+###
+GET http://localhost:8080/users/1
+content-type: application/json
+
+###
+PUT http://localhost:8080/users/1
+content-type: application/json
+
+{
+    "name": "porucznik",
+    "other": "niebieski"
+}
