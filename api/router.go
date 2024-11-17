@@ -3,11 +3,15 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/bmcszk/user-service/logic"
 )
+
+const defaultLimit = 10
 
 type Handler struct {
 	http.Handler
@@ -88,27 +92,38 @@ func (h *Handler) deleteUserByID(w http.ResponseWriter, r *http.Request) {
 		handleLogicError(w, err)
 		return
 	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) listUsers(w http.ResponseWriter, r *http.Request) {
-	limitParam := r.URL.Query().Get("limit")
-	limit, err := strconv.ParseInt(limitParam, 10, 32)
+	limit, err := getParam(r, "limit", defaultLimit)
 	if err != nil {
 		handleInputError(w, err)
 		return
 	}
-	offsetParam := r.URL.Query().Get("offset")
-	offset, err := strconv.ParseInt(offsetParam, 10, 32)
+	offset, err := getParam(r, "offset", 0)
 	if err != nil {
 		handleInputError(w, err)
 		return
 	}
-	users, err := h.service.ListUsers(r.Context(), int32(limit), int32(offset))
+	users, err := h.service.ListUsers(r.Context(), limit, offset)
 	if err != nil {
 		handleLogicError(w, err)
 		return
 	}
 	handleResult(w, http.StatusOK, users)
+}
+
+func getParam(r *http.Request, key string, defaultValue int32) (int32, error) {
+	param := r.URL.Query().Get(key)
+	if param == "" {
+		return defaultValue, nil
+	}
+	i, err := strconv.ParseInt(param, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("parsing int %s: %w", key, err)
+	}
+	return int32(i), nil
 }
 
 func handleResult(w http.ResponseWriter, code int, v any) {
@@ -121,6 +136,7 @@ func handleResult(w http.ResponseWriter, code int, v any) {
 
 func handleInputError(w http.ResponseWriter, err error) {
 	code := http.StatusBadRequest
+	slog.With("error", err, "code", code).Error("invalid input")
 	handleResult(w, code, ApiError{
 		StatusCode: code,
 		Message:    err.Error(),
@@ -128,18 +144,23 @@ func handleInputError(w http.ResponseWriter, err error) {
 }
 
 func handleLogicError(w http.ResponseWriter, err error) {
-	var code int
-	if errors.Is(err, logic.ErrUserNotFound) {
-		code = http.StatusNotFound
-	} else if errors.Is(err, logic.ErrUserAlreadyExists) {
-		code = http.StatusConflict
-	} else if errors.Is(err, logic.ErrUserNameEmpty) {
-		code = http.StatusBadRequest
-	} else {
-		code = http.StatusInternalServerError
-	}
+	code := getStatusCode(err)
+	slog.With("error", err, "code", code).Error("logic error")
 	handleResult(w, code, ApiError{
 		StatusCode: code,
 		Message:    err.Error(),
 	})
+}
+
+func getStatusCode(err error) int {
+	if errors.Is(err, logic.ErrUserNotFound) {
+		return http.StatusNotFound
+	}
+	if errors.Is(err, logic.ErrUserAlreadyExists) {
+		return http.StatusConflict
+	}
+	if errors.Is(err, logic.ErrUserNameEmpty) {
+		return http.StatusBadRequest
+	}
+	return http.StatusInternalServerError
 }
