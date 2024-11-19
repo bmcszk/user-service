@@ -20,7 +20,18 @@ install-sqlc:
 sqlc: install-sqlc
 	sqlc generate -f db/sqlc.yaml
 
-build:
-	go build -o service .
+.PHONY: compose
+compose:
+	docker compose up -d --build --wait
+
+.PHONY: test
+test: compose
+	go test -count=1 ./...
+
+.PHONY: coverage
+coverage: compose
+	go test -count=1 -coverprofile coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+# TODO figure out how to do coveage during e2e tests
 
 include tilt/Makefile
