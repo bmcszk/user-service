@@ -1,0 +1,34 @@
+load('ext://namespace', 'namespace_create')
+load('ext://secret', 'secret_from_dict')
+
+trigger_mode(TRIGGER_MODE_MANUAL)
+
+# load other Tiltfiles
+if "kind" in k8s_context():
+    load_dynamic('./kind/Tiltfile')
+
+load_dynamic('./infra/Tiltfile')
+
+# namespace
+namespace_create('users', allow_duplicates=True)
+k8s_resource(objects=['users:namespace'], new_name='users-ns', labels='users')
+
+# helm chart values
+valuesPath = '../helm/values.yaml'
+values = read_yaml(valuesPath)
+
+# helm chart
+k8s_yaml(helm('../helm', namespace = 'users', values = [valuesPath]))
+
+# userService
+if values['userService']['enabled']:
+    k8s_resource(workload='users', objects=['users-config:configmap'], labels='users', resource_deps=['users-ns', 'cnpg-cluster'])
+    docker_build(
+        'user-service/service:build', '../')
+
+# test
+if values['test']['enabled']:
+    k8s_resource(workload='test', objects=['test-config:configmap'], labels='test', resource_deps=['users-ns', 'users'])
+    docker_build(
+        'user-service/test:build', '../',
+        dockerfile = '../Dockerfile.test')

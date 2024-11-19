@@ -22,3 +22,5 @@ sqlc: install-sqlc
 
 build:
 	go build -o service .
+
+include tilt/Makefile

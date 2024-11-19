@@ -1,0 +1,20 @@
+cluster:
+  instances: 1
+
+  initdb:
+    database: user_db
+    secret:
+      name: user-db-secret
+
+  superuserSecret: user-db-secret
+
+  storage:
+    size: 100Mi
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 500m
+      memory: 512Mi

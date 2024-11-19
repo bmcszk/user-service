@@ -1,0 +1,21 @@
+load('ext://namespace', 'namespace_create')
+load('ext://helm_resource', 'helm_resource', 'helm_repo')
+load('ext://secret', 'secret_from_dict')
+load('ext://dotenv', 'dotenv')
+
+dotenv(fn='../../.env')
+
+namespace_create('infra', allow_duplicates=True)
+k8s_yaml(secret_from_dict('user-db-secret', namespace='infra', inputs={
+    'username': os.getenv('POSTGRES_USER' , ''),
+    'password': os.getenv('POSTGRES_PASSWORD' , '')
+}))
+k8s_resource(objects=['infra:namespace', 'user-db-secret:secret'], new_name='infra-ns', labels='infra')
+
+# https://cloudnative-pg.io/
+
+helm_repo('cnpg-charts', 'https://cloudnative-pg.github.io/charts', labels='infra')
+
+helm_resource('cnpg-operator', 'cnpg-charts/cloudnative-pg', namespace = 'infra', labels='infra', resource_deps=['infra-ns','cnpg-charts'])
+
+helm_resource('cnpg-cluster', 'cnpg-charts/cluster', namespace = 'infra', flags=['--values=cnpg.yaml'], labels='infra', resource_deps=['cnpg-operator'], pod_readiness='wait')
