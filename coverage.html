@@ -1,0 +1,1239 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>api: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/bmcszk/user-service/api/model.go (0.0%)</option>
+				
+				<option value="file1">github.com/bmcszk/user-service/api/router.go (8.0%)</option>
+				
+				<option value="file2">github.com/bmcszk/user-service/db/db.go (50.0%)</option>
+				
+				<option value="file3">github.com/bmcszk/user-service/db/init.go (0.0%)</option>
+				
+				<option value="file4">github.com/bmcszk/user-service/db/query.sql.go (29.6%)</option>
+				
+				<option value="file5">github.com/bmcszk/user-service/e2e/e2e_test_blocks.go (78.4%)</option>
+				
+				<option value="file6">github.com/bmcszk/user-service/logic/model.go (100.0%)</option>
+				
+				<option value="file7">github.com/bmcszk/user-service/logic/service.go (87.2%)</option>
+				
+				<option value="file8">github.com/bmcszk/user-service/logic/service_test_blocks.go (91.2%)</option>
+				
+				<option value="file9">github.com/bmcszk/user-service/main.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package api
+
+import "fmt"
+
+type ApiError struct {
+        StatusCode int    `json:"status_code"`
+        Message    string `json:"message"`
+}
+
+func (e ApiError) Error() string <span class="cov0" title="0">{
+        return fmt.Sprintf("status_code: %d, message: %s", e.StatusCode, e.Message)
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package api
+
+import (
+        "encoding/json"
+        "errors"
+        "fmt"
+        "log/slog"
+        "net/http"
+        "strconv"
+
+        "github.com/bmcszk/user-service/logic"
+)
+
+const defaultLimit = 10
+
+type Handler struct {
+        http.Handler
+        service *logic.Service
+}
+
+func NewHandler(service *logic.Service) *Handler <span class="cov0" title="0">{
+        router := http.NewServeMux()
+        h := &amp;Handler{
+                Handler: router,
+                service: service,
+        }
+        router.HandleFunc("POST /users", h.createUser)
+        router.HandleFunc("GET /users/{id}", h.getUserByID)
+        router.HandleFunc("PUT /users/{id}", h.updateUserByID)
+        router.HandleFunc("DELETE /users/{id}", h.deleteUserByID)
+        router.HandleFunc("GET /users", h.listUsers)
+        return h
+}</span>
+
+func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        var user logic.User
+        if err := json.NewDecoder(r.Body).Decode(&amp;user); err != nil </span><span class="cov0" title="0">{
+                handleInputError(w, err)
+                return
+        }</span>
+        <span class="cov0" title="0">res, err := h.service.CreateUser(r.Context(), user)
+        if err != nil </span><span class="cov0" title="0">{
+                handleLogicError(w, err)
+                return
+        }</span>
+        <span class="cov0" title="0">handleResult(w, http.StatusCreated, res)</span>
+}
+
+func (h *Handler) getUserByID(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        idParam := r.PathValue("id")
+        id, err := strconv.ParseInt(idParam, 10, 64)
+        if err != nil </span><span class="cov0" title="0">{
+                handleInputError(w, err)
+                return
+        }</span>
+        <span class="cov0" title="0">user, err := h.service.GetUserByID(r.Context(), id)
+        if err != nil </span><span class="cov0" title="0">{
+                handleLogicError(w, err)
+                return
+        }</span>
+        <span class="cov0" title="0">handleResult(w, http.StatusOK, user)</span>
+}
+
+func (h *Handler) updateUserByID(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        idParam := r.PathValue("id")
+        id, err := strconv.ParseInt(idParam, 10, 64)
+        if err != nil </span><span class="cov0" title="0">{
+                handleInputError(w, err)
+                return
+        }</span>
+        <span class="cov0" title="0">var user logic.User
+        if err := json.NewDecoder(r.Body).Decode(&amp;user); err != nil </span><span class="cov0" title="0">{
+                handleInputError(w, err)
+                return
+        }</span>
+        <span class="cov0" title="0">res, err := h.service.UpdateUserByID(r.Context(), id, user)
+        if err != nil </span><span class="cov0" title="0">{
+                handleLogicError(w, err)
+                return
+        }</span>
+        <span class="cov0" title="0">handleResult(w, http.StatusOK, res)</span>
+}
+
+func (h *Handler) deleteUserByID(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        idParam := r.PathValue("id")
+        id, err := strconv.ParseInt(idParam, 10, 64)
+        if err != nil </span><span class="cov0" title="0">{
+                handleInputError(w, err)
+                return
+        }</span>
+        <span class="cov0" title="0">if err := h.service.DeleteUserByID(r.Context(), id); err != nil </span><span class="cov0" title="0">{
+                handleLogicError(w, err)
+                return
+        }</span>
+        <span class="cov0" title="0">w.WriteHeader(http.StatusNoContent)</span>
+}
+
+func (h *Handler) listUsers(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        limit, err := getParam(r, "limit", defaultLimit)
+        if err != nil </span><span class="cov0" title="0">{
+                handleInputError(w, err)
+                return
+        }</span>
+        <span class="cov0" title="0">offset, err := getParam(r, "offset", 0)
+        if err != nil </span><span class="cov0" title="0">{
+                handleInputError(w, err)
+                return
+        }</span>
+        <span class="cov0" title="0">users, err := h.service.ListUsers(r.Context(), limit, offset)
+        if err != nil </span><span class="cov0" title="0">{
+                handleLogicError(w, err)
+                return
+        }</span>
+        <span class="cov0" title="0">handleResult(w, http.StatusOK, users)</span>
+}
+
+func getParam(r *http.Request, key string, defaultValue int32) (int32, error) <span class="cov0" title="0">{
+        param := r.URL.Query().Get(key)
+        if param == "" </span><span class="cov0" title="0">{
+                return defaultValue, nil
+        }</span>
+        <span class="cov0" title="0">i, err := strconv.ParseInt(param, 10, 32)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("parsing int %s: %w", key, err)
+        }</span>
+        <span class="cov0" title="0">return int32(i), nil</span>
+}
+
+func handleResult(w http.ResponseWriter, code int, v any) <span class="cov0" title="0">{
+        w.WriteHeader(code)
+        if err := json.NewEncoder(w).Encode(v); err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                return
+        }</span>
+}
+
+func handleInputError(w http.ResponseWriter, err error) <span class="cov0" title="0">{
+        code := http.StatusBadRequest
+        slog.With("error", err, "code", code).Error("invalid input")
+        handleResult(w, code, ApiError{
+                StatusCode: code,
+                Message:    err.Error(),
+        })
+}</span>
+
+func handleLogicError(w http.ResponseWriter, err error) <span class="cov0" title="0">{
+        code := getStatusCode(err)
+        slog.With("error", err, "code", code).Error("logic error")
+        handleResult(w, code, ApiError{
+                StatusCode: code,
+                Message:    err.Error(),
+        })
+}</span>
+
+func getStatusCode(err error) int <span class="cov8" title="1">{
+        if errors.Is(err, logic.ErrUserNotFound) </span><span class="cov8" title="1">{
+                return http.StatusNotFound
+        }</span>
+        <span class="cov8" title="1">if errors.Is(err, logic.ErrUserAlreadyExists) </span><span class="cov8" title="1">{
+                return http.StatusConflict
+        }</span>
+        <span class="cov8" title="1">if errors.Is(err, logic.ErrUserNameEmpty) </span><span class="cov8" title="1">{
+                return http.StatusBadRequest
+        }</span>
+        <span class="cov8" title="1">return http.StatusInternalServerError</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">// Code generated by sqlc. DO NOT EDIT.
+// versions:
+//   sqlc v1.27.0
+
+package db
+
+import (
+        "context"
+
+        "github.com/jackc/pgx/v5"
+        "github.com/jackc/pgx/v5/pgconn"
+)
+
+type DBTX interface {
+        Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
+        Query(context.Context, string, ...interface{}) (pgx.Rows, error)
+        QueryRow(context.Context, string, ...interface{}) pgx.Row
+}
+
+func New(db DBTX) *Queries <span class="cov8" title="1">{
+        return &amp;Queries{db: db}
+}</span>
+
+type Queries struct {
+        db DBTX
+}
+
+func (q *Queries) WithTx(tx pgx.Tx) *Queries <span class="cov0" title="0">{
+        return &amp;Queries{
+                db: tx,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package db
+
+import (
+        "context"
+
+        "github.com/golang-migrate/migrate/v4"
+        _ "github.com/golang-migrate/migrate/v4/database/postgres"
+        _ "github.com/golang-migrate/migrate/v4/source/file"
+        "github.com/jackc/pgx/v5"
+)
+
+func InitDB(ctx context.Context, postgresUrl string) (*pgx.Conn, error) <span class="cov0" title="0">{
+        err := migrateUp(postgresUrl)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">conn, err := pgx.Connect(ctx, postgresUrl)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return conn, nil</span>
+}
+
+func migrateUp(postgresUrl string) error <span class="cov0" title="0">{
+        m, err := migrate.New(
+                "file://db/migrations",
+                postgresUrl)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov0" title="0">if err := m.Up(); err != nil &amp;&amp; err != migrate.ErrNoChange </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">// Code generated by sqlc. DO NOT EDIT.
+// versions:
+//   sqlc v1.27.0
+// source: query.sql
+
+package db
+
+import (
+        "context"
+
+        "github.com/jackc/pgx/v5/pgtype"
+)
+
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (
+  name, other, created_at
+) VALUES (
+  $1, $2, now()
+)
+RETURNING id, name, other, created_at, updated_at
+`
+
+type CreateUserParams struct {
+        Name  string
+        Other pgtype.Text
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) <span class="cov8" title="1">{
+        row := q.db.QueryRow(ctx, createUser, arg.Name, arg.Other)
+        var i User
+        err := row.Scan(
+                &amp;i.ID,
+                &amp;i.Name,
+                &amp;i.Other,
+                &amp;i.CreatedAt,
+                &amp;i.UpdatedAt,
+        )
+        return i, err
+}</span>
+
+const deleteUser = `-- name: DeleteUser :exec
+DELETE FROM users
+WHERE id = $1
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id int64) error <span class="cov0" title="0">{
+        _, err := q.db.Exec(ctx, deleteUser, id)
+        return err
+}</span>
+
+const getUser = `-- name: GetUser :one
+SELECT id, name, other, created_at, updated_at FROM users
+WHERE id = $1 LIMIT 1
+`
+
+func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) <span class="cov8" title="1">{
+        row := q.db.QueryRow(ctx, getUser, id)
+        var i User
+        err := row.Scan(
+                &amp;i.ID,
+                &amp;i.Name,
+                &amp;i.Other,
+                &amp;i.CreatedAt,
+                &amp;i.UpdatedAt,
+        )
+        return i, err
+}</span>
+
+const listUsers = `-- name: ListUsers :many
+SELECT id, name, other, created_at, updated_at FROM users
+ORDER BY created_at LIMIT $1 OFFSET $2
+`
+
+type ListUsersParams struct {
+        Limit  int32
+        Offset int32
+}
+
+func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) <span class="cov0" title="0">{
+        rows, err := q.db.Query(ctx, listUsers, arg.Limit, arg.Offset)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">defer rows.Close()
+        var items []User
+        for rows.Next() </span><span class="cov0" title="0">{
+                var i User
+                if err := rows.Scan(
+                        &amp;i.ID,
+                        &amp;i.Name,
+                        &amp;i.Other,
+                        &amp;i.CreatedAt,
+                        &amp;i.UpdatedAt,
+                ); err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+                <span class="cov0" title="0">items = append(items, i)</span>
+        }
+        <span class="cov0" title="0">if err := rows.Err(); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return items, nil</span>
+}
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users
+  set name = $2,
+  other = $3,
+  updated_at = now()
+WHERE id = $1
+RETURNING id, name, other, created_at, updated_at
+`
+
+type UpdateUserParams struct {
+        ID    int64
+        Name  string
+        Other pgtype.Text
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) <span class="cov0" title="0">{
+        row := q.db.QueryRow(ctx, updateUser, arg.ID, arg.Name, arg.Other)
+        var i User
+        err := row.Scan(
+                &amp;i.ID,
+                &amp;i.Name,
+                &amp;i.Other,
+                &amp;i.CreatedAt,
+                &amp;i.UpdatedAt,
+        )
+        return i, err
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package e2e
+
+import (
+        "bytes"
+        "context"
+        "encoding/json"
+        "fmt"
+        "log/slog"
+        "math/rand"
+        "net/http"
+        "os"
+        "testing"
+
+        "github.com/bmcszk/user-service/db"
+        "github.com/bmcszk/user-service/logic"
+        "github.com/jackc/pgx/v5"
+        "github.com/jackc/pgx/v5/pgtype"
+        "github.com/joho/godotenv"
+)
+
+type Block struct {
+        *testing.T
+        ctx        context.Context
+        client     *http.Client
+        serviceUri string
+        queries    *db.Queries
+
+        givenID   int64
+        givenUser logic.User
+        request   *http.Request
+
+        response      *http.Response
+        returnedUser  *logic.User
+        returnedUsers *logic.UsersResponse
+        returnErr     error
+}
+
+func init() <span class="cov8" title="1">{
+        if err := godotenv.Load("../.env"); err != nil </span><span class="cov0" title="0">{
+                slog.Warn("failed to load .env")
+        }</span>
+}
+
+func NewBlocks(t *testing.T) (*Block, *Block, *Block) <span class="cov8" title="1">{
+        postgresUrl := os.Getenv("POSTGRES_URL")
+        ctx, cancel := context.WithCancel(context.Background())
+        conn, err := pgx.Connect(ctx, postgresUrl)
+        if err != nil </span><span class="cov0" title="0">{
+                t.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">queries := db.New(conn)
+        t.Cleanup(func() </span><span class="cov8" title="1">{
+                // TODO clean DB after tests
+                cancel()
+                conn.Close(ctx)
+        }</span>)
+        <span class="cov8" title="1">b := &amp;Block{
+                T:          t,
+                ctx:        ctx,
+                client:     http.DefaultClient,
+                queries:    queries,
+                serviceUri: os.Getenv("SERVICE_URI"),
+        }
+        return b, b, b</span>
+}
+
+func (b *Block) and() *Block <span class="cov8" title="1">{
+        return b
+}</span>
+
+func (b *Block) aValidUserData() *Block <span class="cov8" title="1">{
+        b.givenUser = logic.User{
+                Name:  randomString(10),
+                Other: "e2e test user",
+        }
+        return b
+}</span>
+
+func (b *Block) aID() *Block <span class="cov8" title="1">{
+        b.givenID = int64(rand.Intn(10000)) + 10000
+        return b
+}</span>
+
+func (b *Block) userIsChanged() *Block <span class="cov8" title="1">{
+        b.givenUser.Name = randomString(10)
+        b.givenUser.Other = "e2e test user changed"
+        return b
+}</span>
+
+func (b *Block) aInvalidUserData() *Block <span class="cov8" title="1">{
+        b.givenUser = logic.User{
+                Name:  "",
+                Other: "other",
+        }
+        return b
+}</span>
+
+func (b *Block) postRequest() *Block <span class="cov8" title="1">{
+        requestBody, err := json.Marshal(b.givenUser)
+        if err != nil </span><span class="cov0" title="0">{
+                b.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">b.request, err = http.NewRequestWithContext(b.ctx, http.MethodPost, fmt.Sprintf("%s/users", b.serviceUri), bytes.NewReader(requestBody))
+        if err != nil </span><span class="cov0" title="0">{
+                b.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) getRequest() *Block <span class="cov8" title="1">{
+        var err error
+        b.request, err = http.NewRequestWithContext(b.ctx, http.MethodGet, fmt.Sprintf("%s/users/%v", b.serviceUri, b.givenID), nil)
+        if err != nil </span><span class="cov0" title="0">{
+                b.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) putRequest() *Block <span class="cov8" title="1">{
+        requestBody, err := json.Marshal(b.givenUser)
+        if err != nil </span><span class="cov0" title="0">{
+                b.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">b.request, err = http.NewRequestWithContext(b.ctx, http.MethodPut, fmt.Sprintf("%s/users/%v", b.serviceUri, b.givenID), bytes.NewReader(requestBody))
+        if err != nil </span><span class="cov0" title="0">{
+                b.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) deleteRequest() *Block <span class="cov8" title="1">{
+        var err error
+        b.request, err = http.NewRequestWithContext(b.ctx, http.MethodDelete, fmt.Sprintf("%s/users/%v", b.serviceUri, b.givenID), nil)
+        if err != nil </span><span class="cov0" title="0">{
+                b.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) listRequest() *Block <span class="cov8" title="1">{
+        var err error
+        b.request, err = http.NewRequestWithContext(b.ctx, http.MethodGet, fmt.Sprintf("%s/users", b.serviceUri), nil)
+        if err != nil </span><span class="cov0" title="0">{
+                b.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) sending() *Block <span class="cov8" title="1">{
+        b.response, b.returnErr = b.client.Do(b.request)
+        return b
+}</span>
+
+func (b *Block) noError() *Block <span class="cov8" title="1">{
+        if b.returnErr != nil </span><span class="cov0" title="0">{
+                b.Fatal(b.returnErr)
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) statusCodeIs(code int) *Block <span class="cov8" title="1">{
+        if b.response.StatusCode != code </span><span class="cov0" title="0">{
+                b.Fatalf("status code not expected: %v", b.response.StatusCode)
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) userIsReturned() *Block <span class="cov8" title="1">{
+        err := json.NewDecoder(b.response.Body).Decode(&amp;b.returnedUser)
+        if err != nil </span><span class="cov0" title="0">{
+                b.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">defer b.response.Body.Close()
+        return b</span>
+}
+
+func (b *Block) returnedUserIsValid() *Block <span class="cov8" title="1">{
+        if b.returnedUser == nil </span><span class="cov0" title="0">{
+                b.Fatal("user not returned")
+        }</span>
+        <span class="cov8" title="1">if b.returnedUser.ID == 0 || b.returnedUser.CreatedAt.IsZero() </span><span class="cov0" title="0">{
+                b.Fatal("invalid user")
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) userIsValid(user *logic.User) *Block <span class="cov8" title="1">{
+        if user == nil </span><span class="cov0" title="0">{
+                b.Fatal("user not returned")
+        }</span>
+        <span class="cov8" title="1">if user.ID == 0 || user.CreatedAt.IsZero() </span><span class="cov0" title="0">{
+                b.Fatal("invalid user")
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) usersAreReturned() *Block <span class="cov8" title="1">{
+        err := json.NewDecoder(b.response.Body).Decode(&amp;b.returnedUsers)
+        if err != nil </span><span class="cov0" title="0">{
+                b.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">defer b.response.Body.Close()
+        return b</span>
+}
+
+func (b *Block) returnedUsersAreValid() *Block <span class="cov8" title="1">{
+        if b.returnedUsers.Count == 0 </span><span class="cov0" title="0">{
+                b.Fatal("users not returned")
+        }</span>
+        <span class="cov8" title="1">if b.returnedUsers.Count != len(b.returnedUsers.Users) </span><span class="cov0" title="0">{
+                b.Fatal("invalid number of users returned")
+        }</span>
+        <span class="cov8" title="1">for _, user := range b.returnedUsers.Users </span><span class="cov8" title="1">{
+                b.userIsValid(user)
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) alreadyStoredInDB() *Block <span class="cov8" title="1">{
+        dbUser, err := b.queries.CreateUser(b.ctx, db.CreateUserParams{
+                Name:  b.givenUser.Name,
+                Other: pgtype.Text{String: b.givenUser.Other, Valid: true},
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                b.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">b.givenID = dbUser.ID
+        return b</span>
+}
+
+func (b *Block) userIsStoredInDB() *Block <span class="cov8" title="1">{
+        dbUser, err := b.queries.GetUser(b.ctx, b.returnedUser.ID)
+        if err != nil </span><span class="cov0" title="0">{
+                b.Fatal(err)
+        }</span>
+        <span class="cov8" title="1">if dbUser.Name != b.givenUser.Name || dbUser.Other.String != b.givenUser.Other </span><span class="cov0" title="0">{
+                b.Fatal("user stored in db not expected")
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randomString(n int) string <span class="cov8" title="1">{
+        b := make([]rune, n)
+        for i := range b </span><span class="cov8" title="1">{
+                b[i] = letterRunes[rand.Intn(len(letterRunes))]
+        }</span>
+        <span class="cov8" title="1">return string(b)</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package logic
+
+import (
+        "time"
+
+        "github.com/bmcszk/user-service/db"
+)
+
+type User struct {
+        ID        int64      `json:"id"`
+        Name      string     `json:"name"`
+        Other     string     `json:"other"`
+        CreatedAt time.Time  `json:"created_at"`
+        UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
+func FromDBUser(dbUser db.User) *User <span class="cov8" title="1">{
+        var updatedAt *time.Time
+        if dbUser.UpdatedAt.Valid </span><span class="cov8" title="1">{
+                updatedAt = &amp;dbUser.UpdatedAt.Time
+        }</span>
+        <span class="cov8" title="1">return &amp;User{
+                ID:        dbUser.ID,
+                Name:      dbUser.Name,
+                Other:     dbUser.Other.String,
+                CreatedAt: dbUser.CreatedAt.Time,
+                UpdatedAt: updatedAt,
+        }</span>
+}
+
+type UsersResponse struct {
+        Users []*User `json:"users"`
+        Count int     `json:"count"`
+}
+
+func FromDBUsers(dbUser []db.User) *UsersResponse <span class="cov8" title="1">{
+        users := make([]*User, len(dbUser))
+        for i, dbUser := range dbUser </span><span class="cov8" title="1">{
+                users[i] = FromDBUser(dbUser)
+        }</span>
+        <span class="cov8" title="1">return &amp;UsersResponse{
+                Users: users,
+                Count: len(dbUser),
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package logic
+
+import (
+        "context"
+        "errors"
+
+        "github.com/bmcszk/user-service/db"
+        "github.com/jackc/pgx/v5"
+        "github.com/jackc/pgx/v5/pgconn"
+        "github.com/jackc/pgx/v5/pgtype"
+)
+
+const DuplicateErrorCode = "23505"
+
+var ErrUserNotFound = errors.New("user not found")
+var ErrUserAlreadyExists = errors.New("user already exists")
+var ErrUserNameEmpty = errors.New("user name empty")
+
+type queries interface {
+        CreateUser(context.Context, db.CreateUserParams) (db.User, error)
+        GetUser(context.Context, int64) (db.User, error)
+        UpdateUser(context.Context, db.UpdateUserParams) (db.User, error)
+        DeleteUser(context.Context, int64) error
+        ListUsers(context.Context, db.ListUsersParams) ([]db.User, error)
+}
+
+type Service struct {
+        queries queries
+}
+
+func NewService(queries queries) *Service <span class="cov8" title="1">{
+        return &amp;Service{
+                queries: queries,
+        }
+}</span>
+
+func (s *Service) CreateUser(ctx context.Context, user User) (*User, error) <span class="cov8" title="1">{
+        if err := validateUser(user); err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">dbUser, err := s.queries.CreateUser(ctx, db.CreateUserParams{
+                Name:  user.Name,
+                Other: pgtype.Text{String: user.Other, Valid: true},
+        })
+        if err != nil </span><span class="cov8" title="1">{
+                var pgErr *pgconn.PgError
+                if errors.As(err, &amp;pgErr) &amp;&amp; pgErr.Code == DuplicateErrorCode </span><span class="cov8" title="1">{
+                        return nil, ErrUserAlreadyExists
+                }</span>
+                <span class="cov0" title="0">return nil, err</span>
+        }
+        <span class="cov8" title="1">return FromDBUser(dbUser), nil</span>
+}
+
+func (s *Service) GetUserByID(ctx context.Context, id int64) (*User, error) <span class="cov8" title="1">{
+        dbUser, err := s.queries.GetUser(ctx, id)
+        if err != nil </span><span class="cov8" title="1">{
+                if err == pgx.ErrNoRows </span><span class="cov8" title="1">{
+                        return nil, ErrUserNotFound
+                }</span>
+                <span class="cov0" title="0">return nil, err</span>
+        }
+        <span class="cov8" title="1">return FromDBUser(dbUser), nil</span>
+}
+
+func (s *Service) UpdateUserByID(ctx context.Context, id int64, user User) (*User, error) <span class="cov8" title="1">{
+        if err := validateUser(user); err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">dbUser, err := s.queries.UpdateUser(ctx, db.UpdateUserParams{
+                ID:    id,
+                Name:  user.Name,
+                Other: pgtype.Text{String: user.Other, Valid: true},
+        })
+        if err != nil </span><span class="cov8" title="1">{
+                if err == pgx.ErrNoRows </span><span class="cov8" title="1">{
+                        return nil, ErrUserNotFound
+                }</span>
+                <span class="cov8" title="1">var pgErr *pgconn.PgError
+                if errors.As(err, &amp;pgErr) &amp;&amp; pgErr.Code == DuplicateErrorCode </span><span class="cov8" title="1">{
+                        return nil, ErrUserAlreadyExists
+                }</span>
+                <span class="cov0" title="0">return nil, err</span>
+        }
+        <span class="cov8" title="1">return FromDBUser(dbUser), nil</span>
+}
+
+func (s *Service) DeleteUserByID(ctx context.Context, id int64) error <span class="cov8" title="1">{
+        if err := s.queries.DeleteUser(ctx, id); err != nil </span><span class="cov8" title="1">{
+                if err == pgx.ErrNoRows </span><span class="cov8" title="1">{
+                        return ErrUserNotFound
+                }</span>
+                <span class="cov0" title="0">return err</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+func (s *Service) ListUsers(ctx context.Context, limit, offset int32) (*UsersResponse, error) <span class="cov8" title="1">{
+        dbUsers, err := s.queries.ListUsers(ctx, db.ListUsersParams{
+                Limit:  int32(limit),
+                Offset: int32(offset),
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return FromDBUsers(dbUsers), nil</span>
+}
+
+func validateUser(user User) error <span class="cov8" title="1">{
+        if user.Name == "" </span><span class="cov8" title="1">{
+                return ErrUserNameEmpty
+        }</span>
+        // ...
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package logic
+
+import (
+        "context"
+        "errors"
+        "testing"
+        "time"
+
+        "github.com/bmcszk/user-service/db"
+        "github.com/jackc/pgx/v5"
+        "github.com/jackc/pgx/v5/pgconn"
+        "github.com/jackc/pgx/v5/pgtype"
+)
+
+var createdAt = time.Now()
+var updatedAt = time.Now()
+
+type Block struct {
+        *testing.T
+        queries *MockQueries
+        service *Service
+
+        givenID   int64
+        givenUser User
+
+        returnedUser  *User
+        returnedUsers *UsersResponse
+        returnErr     error
+}
+
+func NewBlocks(t *testing.T) (*Block, *Block, *Block) <span class="cov8" title="1">{
+        queries := &amp;MockQueries{}
+        service := NewService(queries)
+        b := &amp;Block{
+                T:       t,
+                queries: queries,
+                service: service,
+        }
+        return b, b, b
+}</span>
+
+func (b *Block) and() *Block <span class="cov8" title="1">{
+        return b
+}</span>
+
+func (b *Block) aUser() *Block <span class="cov8" title="1">{
+        b.givenUser = User{
+                Name:  "name",
+                Other: "other",
+        }
+        return b
+}</span>
+
+func (b *Block) aInvaliUser() *Block <span class="cov8" title="1">{
+        b.givenUser = User{
+                Name:  "",
+                Other: "other",
+        }
+        return b
+}</span>
+
+func (b *Block) aID() *Block <span class="cov8" title="1">{
+        b.givenID = 7
+        return b
+}</span>
+
+func (b *Block) dbCanCreateUser() *Block <span class="cov8" title="1">{
+        b.queries.createUser = func(ctx context.Context, params db.CreateUserParams) (db.User, error) </span><span class="cov8" title="1">{
+                return db.User{
+                        ID:        1,
+                        Name:      params.Name,
+                        Other:     params.Other,
+                        CreatedAt: pgtype.Timestamp{Time: createdAt, Valid: true},
+                }, nil
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) dbCannotCreateDuplicatedUser() *Block <span class="cov8" title="1">{
+        b.queries.createUser = func(ctx context.Context, params db.CreateUserParams) (db.User, error) </span><span class="cov8" title="1">{
+                return db.User{}, &amp;pgconn.PgError{
+                        Code:    "23505",
+                        Message: `duplicate key value violates unique constraint "users_name"`,
+                }
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) dbCanGetUser() *Block <span class="cov8" title="1">{
+        b.queries.getUser = func(ctx context.Context, id int64) (db.User, error) </span><span class="cov8" title="1">{
+                return db.User{
+                        ID:        id,
+                        Name:      "name",
+                        Other:     pgtype.Text{String: "other", Valid: true},
+                        CreatedAt: pgtype.Timestamp{Time: createdAt, Valid: true},
+                }, nil
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) dbCannotFindUser() *Block <span class="cov8" title="1">{
+        b.queries.getUser = func(ctx context.Context, id int64) (db.User, error) </span><span class="cov8" title="1">{
+                return db.User{}, pgx.ErrNoRows
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) dbCanUpdateUser() *Block <span class="cov8" title="1">{
+        b.queries.updateUser = func(ctx context.Context, params db.UpdateUserParams) (db.User, error) </span><span class="cov8" title="1">{
+                return db.User{
+                        ID:        params.ID,
+                        Name:      params.Name,
+                        Other:     params.Other,
+                        CreatedAt: pgtype.Timestamp{Time: createdAt, Valid: true},
+                        UpdatedAt: pgtype.Timestamp{Time: updatedAt, Valid: true},
+                }, nil
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) dbCannotUpdateWithExistingUsername() *Block <span class="cov8" title="1">{
+        b.queries.updateUser = func(ctx context.Context, params db.UpdateUserParams) (db.User, error) </span><span class="cov8" title="1">{
+                return db.User{}, &amp;pgconn.PgError{
+                        Code:    "23505",
+                        Message: `duplicate key value violates unique constraint "users_name"`,
+                }
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) dbCannotFindUserForUpdate() *Block <span class="cov8" title="1">{
+        b.queries.updateUser = func(ctx context.Context, params db.UpdateUserParams) (db.User, error) </span><span class="cov8" title="1">{
+                return db.User{}, pgx.ErrNoRows
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) dbCanDeleteUser() *Block <span class="cov8" title="1">{
+        b.queries.deleteUser = func(ctx context.Context, id int64) error </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) dbCannotFindUserForDelete() *Block <span class="cov8" title="1">{
+        b.queries.deleteUser = func(ctx context.Context, id int64) error </span><span class="cov8" title="1">{
+                return pgx.ErrNoRows
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) dbCanListUsers() *Block <span class="cov8" title="1">{
+        b.queries.listUsers = func(ctx context.Context, params db.ListUsersParams) ([]db.User, error) </span><span class="cov8" title="1">{
+                return []db.User{
+                        {
+                                ID:        1,
+                                Name:      "name",
+                                Other:     pgtype.Text{String: "other", Valid: true},
+                                CreatedAt: pgtype.Timestamp{Time: createdAt, Valid: true},
+                        },
+                        {
+                                ID:        2,
+                                Name:      "name2",
+                                Other:     pgtype.Text{String: "other2", Valid: true},
+                                CreatedAt: pgtype.Timestamp{Time: createdAt, Valid: true},
+                        },
+                }, nil
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) serviceCreatesUser() *Block <span class="cov8" title="1">{
+        b.returnedUser, b.returnErr = b.service.CreateUser(context.Background(), b.givenUser)
+        return b
+}</span>
+
+func (b *Block) serviceGetsUser() *Block <span class="cov8" title="1">{
+        b.returnedUser, b.returnErr = b.service.GetUserByID(context.Background(), b.givenID)
+        return b
+}</span>
+
+func (b *Block) serviceUpdatesUser() *Block <span class="cov8" title="1">{
+        b.returnedUser, b.returnErr = b.service.UpdateUserByID(context.Background(), b.givenID, b.givenUser)
+        return b
+}</span>
+
+func (b *Block) serviceDeletesUser() *Block <span class="cov8" title="1">{
+        err := b.service.DeleteUserByID(context.Background(), b.givenID)
+        b.returnErr = err
+        return b
+}</span>
+
+func (b *Block) serviceListsUsers() *Block <span class="cov8" title="1">{
+        b.returnedUsers, b.returnErr = b.service.ListUsers(context.Background(), 10, 0)
+        return b
+}</span>
+
+func (b *Block) noError() *Block <span class="cov8" title="1">{
+        if b.returnErr != nil </span><span class="cov0" title="0">{
+                b.Fatal(b.returnErr)
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) returnedErrorIs(err error) *Block <span class="cov8" title="1">{
+        if b.returnErr == nil </span><span class="cov0" title="0">{
+                b.Fatal("error not returned")
+        }</span>
+        <span class="cov8" title="1">if !errors.Is(b.returnErr, err) </span><span class="cov0" title="0">{
+                b.Fatal("error not expected")
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) userIsReturned() *Block <span class="cov8" title="1">{
+        if b.returnedUser == nil </span><span class="cov0" title="0">{
+                b.Fatal("user not returned")
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) returnedUserIsValid() *Block <span class="cov8" title="1">{
+        return b.userIsValid(b.returnedUser)
+}</span>
+
+func (b *Block) returnedUsersAreValid() *Block <span class="cov8" title="1">{
+        if b.returnedUsers.Count != len(b.returnedUsers.Users) </span><span class="cov0" title="0">{
+                b.Fatal("invalid number of users returned")
+        }</span>
+        <span class="cov8" title="1">for _, user := range b.returnedUsers.Users </span><span class="cov8" title="1">{
+                b.userIsValid(user)
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) userIsValid(user *User) *Block <span class="cov8" title="1">{
+        if user.ID == 0 || user.CreatedAt.IsZero() </span><span class="cov0" title="0">{
+                b.Fatal("invalid user returned")
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+func (b *Block) usersAreReturned() *Block <span class="cov8" title="1">{
+        if b.returnedUsers == nil || len(b.returnedUsers.Users) == 0 </span><span class="cov0" title="0">{
+                b.Fatal("users not returned")
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+type MockQueries struct {
+        createUser func(context.Context, db.CreateUserParams) (db.User, error)
+        getUser    func(context.Context, int64) (db.User, error)
+        updateUser func(context.Context, db.UpdateUserParams) (db.User, error)
+        deleteUser func(context.Context, int64) error
+        listUsers  func(context.Context, db.ListUsersParams) ([]db.User, error)
+}
+
+func (m *MockQueries) CreateUser(ctx context.Context, params db.CreateUserParams) (db.User, error) <span class="cov8" title="1">{
+        return m.createUser(ctx, params)
+}</span>
+
+func (m *MockQueries) GetUser(ctx context.Context, id int64) (db.User, error) <span class="cov8" title="1">{
+        return m.getUser(ctx, id)
+}</span>
+
+func (m *MockQueries) UpdateUser(ctx context.Context, params db.UpdateUserParams) (db.User, error) <span class="cov8" title="1">{
+        return m.updateUser(ctx, params)
+}</span>
+
+func (m *MockQueries) DeleteUser(ctx context.Context, id int64) error <span class="cov8" title="1">{
+        return m.deleteUser(ctx, id)
+}</span>
+
+func (m *MockQueries) ListUsers(ctx context.Context, params db.ListUsersParams) ([]db.User, error) <span class="cov8" title="1">{
+        return m.listUsers(ctx, params)
+}</span>
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package main
+
+import (
+        "context"
+        "log/slog"
+        "net/http"
+        "os"
+
+        "github.com/bmcszk/user-service/api"
+        "github.com/bmcszk/user-service/db"
+        "github.com/bmcszk/user-service/logic"
+
+        "github.com/joho/godotenv"
+)
+
+func main() <span class="cov0" title="0">{
+        // envs
+        err := godotenv.Load()
+        if err != nil </span><span class="cov0" title="0">{
+                slog.Info("No .env file provided")
+        }</span>
+        <span class="cov0" title="0">postgresUrl := os.Getenv("POSTGRES_URL")
+        // ctx
+        ctx, cancel := context.WithCancel(context.Background())
+        defer cancel()
+        // db
+        conn, err := db.InitDB(ctx, postgresUrl)
+        if err != nil </span><span class="cov0" title="0">{
+                slog.Error(err.Error())
+                panic(err)</span>
+        }
+        <span class="cov0" title="0">defer conn.Close(ctx)
+        queries := db.New(conn)
+        // logic
+        service := logic.NewService(queries)
+        // api
+        http.ListenAndServe(":8080", api.NewHandler(service))</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
