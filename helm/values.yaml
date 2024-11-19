@@ -1,0 +1,18 @@
+
+env: production
+
+global:
+  postgresUrl: postgres://postgres:p0stgr3s@cnpg-cluster-rw.infra:5432/user_db
+  # TODO move user/password to secrets
+
+userService:
+  enabled: true
+  name: users
+  tag: build
+  replicas: 1
+
+test:
+  enabled: true
+  name: test
+  tag: build
+  serviceUri: http://users:8080

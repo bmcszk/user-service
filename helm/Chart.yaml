@@ -1,0 +1,7 @@
+apiVersion: v2
+name: user-service
+description: User service
+type: application
+icon:
+version: 0.0.1
+appVersion: 0.0.1

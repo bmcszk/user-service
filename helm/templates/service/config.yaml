@@ -1,0 +1,14 @@
+{{- if (.Values.userService.enabled) -}}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.userService.name }}-config
+  labels:
+    app: {{ .Values.userService.name }}
+    ctx: {{ .Chart.Name }}
+data:
+  APP_ENV: {{ .Values.env }}
+  POSTGRES_URL: {{ .Values.global.postgresUrl }}
+
+{{- end }}

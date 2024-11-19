@@ -1,0 +1,49 @@
+{{- if (.Values.userService.enabled) -}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.userService.name }}
+  labels:
+    app: {{ .Values.userService.name }}
+    ctx: {{ .Chart.Name }}
+spec:
+  replicas: {{ .Values.userService.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.userService.name }}
+      ctx: {{ .Chart.Name }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.userService.name }}
+        ctx: {{ .Chart.Name }}
+    spec:
+      containers:
+        - name: {{ .Values.userService.name }}
+          image: "user-service/service:{{ .Values.userService.tag | default "latest" }}"
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.userService.name }}-config
+          env:
+            - name: GOMEMLIMIT
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.memory
+            - name: GOMAXPROCS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+      restartPolicy: Always
+
+{{- end }}

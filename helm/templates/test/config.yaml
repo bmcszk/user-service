@@ -1,0 +1,15 @@
+{{- if (.Values.test.enabled) -}}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.test.name }}-config
+  labels:
+    app: {{ .Values.test.name }}
+    ctx: {{ .Chart.Name }}
+data:
+  APP_ENV: {{ .Values.env }}
+  SERVICE_URI: {{ .Values.test.serviceUri }}
+  POSTGRES_URL: {{ .Values.global.postgresUrl }}
+
+{{- end }}
