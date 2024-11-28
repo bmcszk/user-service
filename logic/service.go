@@ -16,7 +16,7 @@ var ErrUserNotFound = errors.New("user not found")
 var ErrUserAlreadyExists = errors.New("user already exists")
 var ErrUserNameEmpty = errors.New("user name empty")
 
-type queries interface {
+type userRepo interface {
 	CreateUser(context.Context, db.CreateUserParams) (db.User, error)
 	GetUser(context.Context, int64) (db.User, error)
 	UpdateUser(context.Context, db.UpdateUserParams) (db.User, error)
@@ -25,12 +25,12 @@ type queries interface {
 }
 
 type Service struct {
-	queries queries
+	userRepo userRepo
 }
 
-func NewService(queries queries) *Service {
+func NewService(userRepo userRepo) *Service {
 	return &Service{
-		queries: queries,
+		userRepo: userRepo,
 	}
 }
 
@@ -38,7 +38,7 @@ func (s *Service) CreateUser(ctx context.Context, user User) (*User, error) {
 	if err := validateUser(user); err != nil {
 		return nil, err
 	}
-	dbUser, err := s.queries.CreateUser(ctx, db.CreateUserParams{
+	dbUser, err := s.userRepo.CreateUser(ctx, db.CreateUserParams{
 		Name:  user.Name,
 		Other: pgtype.Text{String: user.Other, Valid: true},
 	})
@@ -53,7 +53,7 @@ func (s *Service) CreateUser(ctx context.Context, user User) (*User, error) {
 }
 
 func (s *Service) GetUserByID(ctx context.Context, id int64) (*User, error) {
-	dbUser, err := s.queries.GetUser(ctx, id)
+	dbUser, err := s.userRepo.GetUser(ctx, id)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, ErrUserNotFound
@@ -67,7 +67,7 @@ func (s *Service) UpdateUserByID(ctx context.Context, id int64, user User) (*Use
 	if err := validateUser(user); err != nil {
 		return nil, err
 	}
-	dbUser, err := s.queries.UpdateUser(ctx, db.UpdateUserParams{
+	dbUser, err := s.userRepo.UpdateUser(ctx, db.UpdateUserParams{
 		ID:    id,
 		Name:  user.Name,
 		Other: pgtype.Text{String: user.Other, Valid: true},
@@ -86,7 +86,7 @@ func (s *Service) UpdateUserByID(ctx context.Context, id int64, user User) (*Use
 }
 
 func (s *Service) DeleteUserByID(ctx context.Context, id int64) error {
-	if err := s.queries.DeleteUser(ctx, id); err != nil {
+	if err := s.userRepo.DeleteUser(ctx, id); err != nil {
 		if err == pgx.ErrNoRows {
 			return ErrUserNotFound
 		}
@@ -96,9 +96,9 @@ func (s *Service) DeleteUserByID(ctx context.Context, id int64) error {
 }
 
 func (s *Service) ListUsers(ctx context.Context, limit, offset int32) (*UsersResponse, error) {
-	dbUsers, err := s.queries.ListUsers(ctx, db.ListUsersParams{
-		Limit:  int32(limit),
-		Offset: int32(offset),
+	dbUsers, err := s.userRepo.ListUsers(ctx, db.ListUsersParams{
+		Limit:  limit,
+		Offset: offset,
 	})
 	if err != nil {
 		return nil, err

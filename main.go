@@ -35,4 +35,5 @@ func main() {
 	service := logic.NewService(queries)
 	// api
 	http.ListenAndServe(":8080", api.NewHandler(service))
+	// TODO graceful shutdown
 }
